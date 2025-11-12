@@ -184,5 +184,5 @@ This project includes a `LICENSE` file in the repository root. Review it for the
 
 ---
 
-Enjoy using `gt` — small tools, big productivity.
+Enjoy using `gt` - small tools, big productivity.
 
