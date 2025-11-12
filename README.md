@@ -37,14 +37,12 @@ Medium term
 
 Long term (bigger features)
 - Build a small TUI with `dialog` or `fzf` for interactive operations (selecting ISOs, package management, KVM control).
-- Create a web-based GUI wrapper for remote management.
 - Add plugin architecture so third-party extensions (e.g., cloud, docker helpers) can be added.
-- Provide an official compiled release and GitHub Actions CI for packaging, linting, and tests.
 
 Priority suggestions
 - 1) Package-manager detection and safe fallbacks
 - 2) Config file and secure password handling
-- 3) Packaging (AUR/DEB) + CI
+- 3) Packaging (AUR/DEB)
 
 ---
 
