@@ -1,22 +1,28 @@
-# Gurix Tools (gt)
+# Gurix Tools (Experimental)
 
 > A small, practical and opinionated toolkit of handy commands and helpers for Linux power-users.
 
-![gt version](https://img.shields.io/badge/version-1.6.0a-blue.svg)
+![gt version](https://img.shields.io/badge/version-1.7.0c-orange.svg)
 
 ---
 
+Note: The bundled `gt` script was recently updated (version E-1.7.0c). Key fixes include correct ANSI color rendering and improved spinner behavior that avoids overlapping sudo password prompts — see `Arch Based/gt` for the full, current script.
+
+
 ## Index
+<details>
+<summary><strong>Interactive Index — click to expand</strong></summary>
 
-- Roadmap
-- How to install
-	- Arch-based systems
-	- Debian-based systems
-- Quick usage & examples
-- Contributing
-- Credits
-- License
+- [Roadmap](#roadmap)
+- [How to install](#how-to-install)
+  - [Arch-based systems (recommended)](#arch-based-systems-recommended)
+  - [Debian / Ubuntu based systems](#debian--ubuntu-based-systems)
+- [Quick usage & examples](#quick-usage--examples)
+- [Contributing](#contributing)
+- [Credits](#credits)
+- [License](#license)
 
+</details>
 ---
 
 ## Roadmap
@@ -123,7 +129,7 @@ fi
 
 ```sh
 sudo apt update
-sudo apt install -y wget bc toilet p7zip unrar wl-clipboard
+sudo apt install -y wget bc toilet p7zip unrar
 ```
 
 4. Use `gt -h` to see help and available options.
@@ -142,8 +148,6 @@ After installation, the script exposes a few handy flags. Example uses:
 	- `gt -u`
 - KVM manager (start/stop):
 	- `gt -vm`
-- Copy stored password to clipboard (script uses `~/.guro_password` by default):
-	- `gt -p`
 - Move a file to trash:
 	- `gt -tr myfile.txt`
 - Unzip various archive formats:
