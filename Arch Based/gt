@@ -1,19 +1,25 @@
 #!/bin/bash
 
 # -------------------------------------------------------------------------------------------------- #
+# ----------------------------------------- All the Script Variables --------------------------------------- #
+# -------------------------------------------------------------------------------------------------- #
+
+# -------------------------------------------------------------------------------------------------- #
 # ----------------------------------------- Color Variables --------------------------------------- #
 # -------------------------------------------------------------------------------------------------- #
 # Easily customizable color scheme for the script
-COLOR_PRIMARY="\e[1;36m"      # Bright Cyan - Primary text
-COLOR_SUCCESS="\e[1;32m"      # Bright Green - Success messages
-COLOR_ERROR="\e[1;31m"        # Bright Red - Error messages
-COLOR_WARNING="\e[1;33m"      # Bright Yellow - Warning messages
-COLOR_INFO="\e[1;34m"         # Bright Blue - Information boxes
-COLOR_ACCENT="\e[37m"         # White - Accent text
-COLOR_RESET="\e[0m"           # Reset to default
+COLOR_PRIMARY=$'\e[1;36m'      # Bright Cyan - Primary text
+COLOR_SUCCESS=$'\e[1;32m'      # Bright Green - Success messages
+COLOR_ERROR=$'\e[1;31m'        # Bright Red - Error messages
+COLOR_WARNING=$'\e[1;33m'      # Bright Yellow - Warning messages
+COLOR_INFO=$'\e[1;34m'         # Bright Blue - Information boxes
+COLOR_ACCENT=$'\e[1;37m'       # Bright White - Accent text
+COLOR_RESET=$'\e[0m'           # Reset to default
 
 # Number of empty lines to reserve above the loading bar (make adjustable)
 LOADING_BAR_PADDING=3
+version="E-1.7.0c"
+distro="Arch"
 
 # -------------------------------------------------------------------------------------------------- #
 # ----------------------------------------- Loading Bar ------------------------------------------- #
@@ -22,8 +28,7 @@ LOADING_BAR_PADDING=3
 # Usage: long_running_command & show_loading_bar $! "Operation description"
 # Or: show_loading_bar_simple "Operation description" for fixed duration
 
-version="1.6.1b"
-distro="Arch"
+
 
 show_loading_bar() {
     # show_loading_bar <pid> <message> [logfile]
@@ -146,6 +151,39 @@ show_loading_bar_simple() {
     tput rc
 }
 
+# Run a command with the spinner when safe, or in-foreground if sudo would prompt
+# Usage: run_with_spinner "<command string>" "Message" [logfile]
+run_with_spinner() {
+    local cmd="$1"
+    local message="$2"
+    local logfile="$3"
+
+    # If we're root, no sudo prompt will occur -> safe to background
+    if [ "$(id -u)" -eq 0 ]; then
+        eval "$cmd" >"${logfile:-/dev/null}" 2>&1 &
+        local pid=$!
+        show_loading_bar "$pid" "$message" "$logfile"
+        return $?
+    fi
+
+    # If sudo doesn't require a password (passwordless), background is safe
+    if sudo -n true 2>/dev/null; then
+        eval "$cmd" >"${logfile:-/dev/null}" 2>&1 &
+        local pid=$!
+        show_loading_bar "$pid" "$message" "$logfile"
+        return $?
+    fi
+
+    # Otherwise run in foreground so any password prompt appears normally
+    # Redirect output to logfile if provided so caller can later inspect it.
+    if [ -n "$logfile" ]; then
+        eval "$cmd" >"$logfile" 2>&1
+    else
+        eval "$cmd"
+    fi
+    return $?
+}
+
 install() {
     local package="$1"
     if [ -z "$package" ]; then
@@ -157,8 +195,8 @@ install() {
     clear
     read -p "Vols instal·lar $package? [S/n] " resp
     if [[ "$resp" == "s" || "$resp" == "S" || "$resp" == "" ]]; then
-        yay -S "$package" --noconfirm &
-        show_loading_bar $! "Instal·lant $package"
+    # Use helper that runs in-foreground if sudo would prompt, avoiding spinner overlap
+    run_with_spinner "yay -S \"$package\" --noconfirm" "Instal·lant $package"
         echo "$package instal·lat correctament."
         echo -e "\n Prem qualsevol tecla per sortir..."
         read -n 1 -s
@@ -183,8 +221,8 @@ uninstall() {
     clear
     read -p "Vols desinstal·lar $package? [S/n] " resp
     if [[ "$resp" == "s" || "$resp" == "S" || "$resp" == "" ]]; then
-        sudo pacman -R "$package" --noconfirm &
-        show_loading_bar $! "Desinstal·lant $package"
+    # Run uninstall with spinner helper; if sudo needs a password it will run in foreground
+    run_with_spinner "sudo pacman -R \"$package\" --noconfirm" "Desinstal·lant $package"
         echo -e "\n $package desinstal·lat correctament."
         echo -e "\n Prem qualsevol tecla per sortir..."
         read -n 1 -s
@@ -219,9 +257,8 @@ ${pad_str}╰──────────────────────�
     # recent output in the reserved area and avoid visual interleaving.
     local tmp_log
     tmp_log=$(mktemp /tmp/gt-update.XXXXXX)
-    yay -Syu --noconfirm >"$tmp_log" 2>&1 &
-    local yay_pid=$!
-    show_loading_bar "$yay_pid" "Actualitzant sistema" "$tmp_log"
+    # Use helper so if sudo is required the command runs in-foreground (password visible)
+    run_with_spinner "yay -Syu --noconfirm >\"$tmp_log\" 2>&1" "Actualitzant sistema" "$tmp_log"
     # once done, print the tail of the log above the box so users can read any
     # final messages (errors/warnings)
     if [ -f "$tmp_log" ]; then
@@ -606,6 +643,7 @@ while [[ "$#" -gt 0 ]]; do
         echo -e "\n${COLOR_PRIMARY}Gurix Tools versió ${version}${COLOR_RESET}\n"
         echo -e "${COLOR_INFO}Versió per la distribució ${distro}${COLOR_RESET}\n"
         echo -e "Desenvolupat per ${COLOR_ACCENT}Gurix${COLOR_RESET}\n"
+        echo -e "${COLOR_ERROR}Versió experimental\n"
         exit 0
         ;;
     unzip)

@@ -211,3 +211,664 @@ This ensures the bar doesn't interfere with script output above it.
 - **Version**: 1.5.1
 - **Target Distribution**: Arch Linux
 - **Last Updated**: 2025-11-12
+
+## Updated gt script (version 1.6.1b)
+
+The full, updated `gt` script is included below for reference and easy copy/paste.
+
+```bash
+#!/bin/bash
+
+# -------------------------------------------------------------------------------------------------- #
+# ----------------------------------------- Color Variables --------------------------------------- #
+# -------------------------------------------------------------------------------------------------- #
+# Easily customizable color scheme for the script
+COLOR_PRIMARY="\e[1;36m"      # Bright Cyan - Primary text
+COLOR_SUCCESS="\e[1;32m"      # Bright Green - Success messages
+COLOR_ERROR="\e[1;31m"        # Bright Red - Error messages
+COLOR_WARNING="\e[1;33m"      # Bright Yellow - Warning messages
+COLOR_INFO="\e[1;34m"         # Bright Blue - Information boxes
+COLOR_ACCENT="\e[37m"         # White - Accent text
+COLOR_RESET="\e[0m"           # Reset to default
+
+# Number of empty lines to reserve above the loading bar (make adjustable)
+LOADING_BAR_PADDING=3
+
+# -------------------------------------------------------------------------------------------------- #
+# ----------------------------------------- Loading Bar ------------------------------------------- #
+# -------------------------------------------------------------------------------------------------- #
+# Modular loading bar function that can be used with long-running processes
+# Usage: long_running_command & show_loading_bar $! "Operation description"
+# Or: show_loading_bar_simple "Operation description" for fixed duration
+
+version="1.6.1b"
+distro="Arch"
+
+show_loading_bar() {
+   # show_loading_bar <pid> <message> [logfile]
+   # If a logfile is provided, the function will render the last
+   # $LOADING_BAR_PADDING lines from the logfile into the reserved area
+   # above the spinner to avoid interleaving with the command output.
+   local pid="$1"
+   local message="${2:-Processing}"
+   local logfile="$3"
+   local bar_length=30
+   local delay=0.1
+
+   # ANSI color codes
+   local spinner=( '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏' )
+   local spinner_idx=0
+
+   # Save cursor position and move to bottom
+   tput sc
+   local term_height=$(tput lines)
+    
+   # Clear (reserve) a few lines above the loading bar so output does not get
+   # visually jammed into the bar. This uses the configurable LOADING_BAR_PADDING
+   # value and clears those rows before starting the spinner. If a logfile is
+   # provided, we'll render the last $LOADING_BAR_PADDING lines from it into
+   # this reserved area while the process runs.
+   local bar_row=$((term_height - 1))
+   local start_row=$((bar_row - LOADING_BAR_PADDING))
+   if [ $start_row -lt 0 ]; then
+      start_row=0
+   fi
+   for ((r = start_row; r < bar_row; r++)); do
+      tput cup $r 0
+      tput el
+   done
+
+   while kill -0 "$pid" 2>/dev/null; do
+      # If a logfile is provided, show its last lines in the reserved area
+      if [ -n "$logfile" ] && [ -f "$logfile" ]; then
+         # read last N lines into an array
+         mapfile -t _lines < <(tail -n "$LOADING_BAR_PADDING" "$logfile" 2>/dev/null)
+         # print them into the reserved rows (top -> bottom)
+         local idx=0
+         for ((r = start_row; r < bar_row; r++)); do
+            tput cup $r 0
+            tput el
+            if [ $idx -lt ${#_lines[@]} ]; then
+               # truncate to terminal width
+               printf "%s\n" "${_lines[$idx]}" | cut -c1-$(tput cols)
+            fi
+            idx=$((idx + 1))
+         done
+      fi
+
+      # Move to bar row and draw spinner
+      tput cup $bar_row 0
+      printf "${COLOR_PRIMARY}${message}${COLOR_RESET} ${spinner[$((spinner_idx++ % ${#spinner[@]}))]}"
+      sleep "$delay"
+   done
+
+   wait "$pid"
+   local exit_code=$?
+
+   # Move to bottom line
+   tput cup $((term_height - 1)) 0
+   tput el  # Clear to end of line
+    
+   if [ $exit_code -eq 0 ]; then
+      printf "${COLOR_SUCCESS}✓ ${message}${COLOR_RESET}\n"
+   else
+      printf "${COLOR_ERROR}✗ ${message}${COLOR_RESET}\n"
+   fi
+
+   # Restore cursor position
+   tput rc
+
+   return $exit_code
+}
+
+show_loading_bar_simple() {
+   local message="${1:-Processing}"
+   local duration="${2:-3}"
+   local bar_length=30
+   local delay=0.1
+
+   local spinner=( '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏' )
+   local spinner_idx=0
+   local elapsed=0
+
+   # Save cursor position and move to bottom
+   tput sc
+   local term_height=$(tput lines)
+
+   # Clear (reserve) a few lines above the loading bar so output does not get
+   # visually jammed into the bar. Use LOADING_BAR_PADDING to decide how many
+   # rows to clear before the bar row.
+   local bar_row=$((term_height - 1))
+   local start_row=$((bar_row - LOADING_BAR_PADDING))
+   if [ $start_row -lt 0 ]; then
+      start_row=0
+   fi
+   for ((r = start_row; r < bar_row; r++)); do
+      tput cup $r 0
+      tput el
+   done
+
+   while [ $elapsed -lt $duration ]; do
+      # Move to bar row
+      tput cup $bar_row 0
+      printf "${COLOR_PRIMARY}${message}${COLOR_RESET} ${spinner[$((spinner_idx++ % ${#spinner[@]}))]}"
+      sleep "$delay"
+      elapsed=$(echo "$elapsed + $delay" | bc)
+   done
+
+   # Move to bottom line
+   tput cup $((term_height - 1)) 0
+   tput el  # Clear to end of line
+   printf "${COLOR_SUCCESS}✓ ${message}${COLOR_RESET}\n"
+
+   # Restore cursor position
+   tput rc
+}
+
+install() {
+   local package="$1"
+   if [ -z "$package" ]; then
+      echo "Error: Cap paquet especificat"
+      echo -e "\n Ús: gt -i <nom_del_paquet>"
+      exit 1
+   fi
+
+   clear
+   read -p "Vols instal·lar $package? [S/n] " resp
+   if [[ "$resp" == "s" || "$resp" == "S" || "$resp" == "" ]]; then
+      yay -S "$package" --noconfirm &
+      show_loading_bar $! "Instal·lant $package"
+      echo "$package instal·lat correctament."
+      echo -e "\n Prem qualsevol tecla per sortir..."
+      read -n 1 -s
+      clear
+   elif [[ "$resp" == "n" || "$resp" == "N" ]]; then
+      echo -e "\n Sortint..."
+      exit 0
+   else
+      echo -e "\n Entrada no vàlida. Si us plau, introdueix [S/n]."
+      exit 1
+   fi
+}
+
+uninstall() {
+   local package="$1"
+   if [ -z "$package" ]; then
+      echo "Error: Cap paquet especificat"
+      echo "Ús: gt -r <nom_del_paquet>"
+      exit 1
+   fi
+
+   clear
+   read -p "Vols desinstal·lar $package? [S/n] " resp
+   if [[ "$resp" == "s" || "$resp" == "S" || "$resp" == "" ]]; then
+      sudo pacman -R "$package" --noconfirm &
+      show_loading_bar $! "Desinstal·lant $package"
+      echo -e "\n $package desinstal·lat correctament."
+      echo -e "\n Prem qualsevol tecla per sortir..."
+      read -n 1 -s
+      clear
+   elif [[ "$resp" == "n" || "$resp" == "N" ]]; then
+      echo "Sortint..."
+      exit 0
+   else
+      echo "Entrada no vàlida. Si us plau, introdueix [S/n]."
+      exit 1
+   fi
+}
+
+perform_update() {
+   clear
+   # Get terminal width
+   term_width=$(tput cols)
+   # Box width is 36 characters
+   box_width=36
+   # Calculate padding needed to center
+   padding=$(((term_width - box_width) / 2))
+   # Create padding string
+   pad_str=$(printf '%*s' "$padding" '')
+
+   # Remove the initial newline to stick to top
+   echo -e "${pad_str}${COLOR_INFO}╭──────────────────────────────────╮
+${pad_str}│     ${COLOR_PRIMARY}GESTOR D'ACTUALITZACIONS${COLOR_INFO}     │
+${pad_str}╰──────────────────────────────────╯${COLOR_RESET}\n"
+
+   # Run the updater in the background so show_loading_bar receives its PID
+   # Run yay and redirect output to a temp log so the loading bar can render
+   # recent output in the reserved area and avoid visual interleaving.
+   local tmp_log
+   tmp_log=$(mktemp /tmp/gt-update.XXXXXX)
+   yay -Syu --noconfirm >"$tmp_log" 2>&1 &
+   local yay_pid=$!
+   show_loading_bar "$yay_pid" "Actualitzant sistema" "$tmp_log"
+   # once done, print the tail of the log above the box so users can read any
+   # final messages (errors/warnings)
+   if [ -f "$tmp_log" ]; then
+      echo
+      tail -n 40 "$tmp_log"
+      rm -f "$tmp_log"
+   fi
+
+   echo -e "\n${pad_str}${COLOR_INFO}╭──────────────────────────────────╮
+${pad_str}│         ${COLOR_SUCCESS}FINALITZAT :)${COLOR_INFO}            │
+${pad_str}╰──────────────────────────────────╯${COLOR_RESET}"
+
+   echo -e "\n Prem qualsevol tecla per sortir..."
+   read -n 1 -s
+   clear
+   exit 0
+}
+
+kvm_manager() {
+   clear
+   # Get terminal width
+   term_width=$(tput cols)
+   # Create padding string for centering (toilet output is approximately 60 chars wide)
+   pad_str=$(printf '%*s' $(((term_width - 60) / 2)) '')
+
+   # Use padding with toilet output
+   echo -e "\n"
+   echo "$pad_str$(toilet -f mono9 -F metal "GESTOR KVM")"
+   echo -e "\n"
+
+   status=$(lsmod | grep kvm)
+
+   if [[ -n "$status" ]]; then
+      read -p 'Aturar KVM? [S/n] ' resp
+      if [[ "$resp" == "s" || "$resp" == "S" || "$resp" == "" ]]; then
+         sudo rmmod kvm_amd
+         sudo rmmod kvm
+         echo "KVM aturat."
+         sleep 2
+         clear
+      elif [[ "$resp" == "n" || "$resp" == "N" ]]; then
+         echo "Sortint..."
+         sleep 2
+         clear
+         exit 0
+      else
+         echo "Entrada no vàlida. Si us plau, introdueix [S/n]."
+         exit 1
+      fi
+   else
+      read -p 'Iniciar KVM? [S/n] ' resp
+      if [[ "$resp" == "s" || "$resp" == "S" || "$resp" == "" ]]; then
+         sudo modprobe kvm
+         sudo modprobe kvm_amd
+         echo "KVM iniciat."
+         sleep 2
+         clear
+      elif [[ "$resp" == "n" || "$resp" == "N" ]]; then
+         echo "Sortint..."
+         sleep 2
+         clear
+         exit 0
+      else
+         echo -e "\n Entrada no vàlida. Si us plau, introdueix [S/n]."
+         exit 1
+      fi
+   fi
+}
+
+
+
+trash() {
+   local file="$1"
+   if [ -z "$file" ]; then
+      echo "Error: Cap fitxer especificat"
+      echo "Ús: gt -tr <nom_del_fitxer>"
+      exit 1
+   fi
+
+   if [ -f "$file" ]; then
+      mv "$file" ~/.local/share/Trash/files/
+      echo "$file enviat a la paperera."
+   else
+      echo "Error: El fitxer $file no existeix."
+   fi
+}
+
+unzip() {
+   local file="$1"
+   if [ -z "$file" ]; then
+      echo "Error: Cap fitxer especificat"
+      echo "Ús: gt unzip <fitxer>"
+      exit 1
+   fi
+
+   if [ ! -f "$file" ]; then
+      echo "Error: El fitxer $file no existeix"
+      exit 1
+   fi
+
+   # Get the file extension
+   extension="${file##*.}"
+   case "${extension,,}" in # Convert to lowercase for comparison
+   "zip")
+      unzip "$file"
+      ;;
+   "tar")
+      tar xf "$file"
+      ;;
+   "gz" | "tgz")
+      tar xzf "$file"
+      ;;
+   "bz2")
+      tar xjf "$file"
+      ;;
+   "xz")
+      tar xJf "$file"
+      ;;
+   "rar")
+      if command -v unrar &>/dev/null; then
+         unrar x "$file"
+      else
+         echo "Error: Cal instal·lar 'unrar' per gestionar fitxers RAR"
+         echo "Pots instal·lar-lo amb: sudo pacman -S unrar"
+         exit 1
+      fi
+      ;;
+   "7z")
+      if command -v 7z &>/dev/null; then
+         7z x "$file"
+      else
+         echo "Error: Cal instal·lar '7zip' per gestionar fitxers 7Z"
+         echo "Pots instal·lar-lo amb: sudo pacman -S p7zip"
+         exit 1
+      fi
+      ;;
+   *)
+      echo "Error: Format de compressió no suportat"
+      echo "Formats suportats: zip, tar, gz, tgz, bz2, xz, rar, 7z"
+      exit 1
+      ;;
+   esac
+
+   echo "Fitxer descomprimit correctament"
+}
+
+download_iso() {
+   local iso_name="$1"
+   local download_dir="$HOME/Downloads/"
+
+   # Create directory if it doesn't exist
+   mkdir -p "$download_dir"
+
+   if [ "$iso_name" = "list" ]; then
+      clear
+      # Get terminal width
+      term_width=$(tput cols)
+      # Box width is 36 characters
+      box_width=36
+      # Calculate padding needed to center
+      padding=$(((term_width - box_width) / 2))
+      # Create padding string
+      pad_str=$(printf '%*s' "$padding" '')
+
+      read -p "$(echo -e "\n${pad_str}${COLOR_INFO}╭──────────────────────────────────╮
+${pad_str}│        ${COLOR_PRIMARY}ISOs Disponibles${COLOR_INFO}          │
+${pad_str}├──────────────────────────────────┤
+${pad_str}│  ${COLOR_SUCCESS}[1]${COLOR_RESET}${COLOR_ACCENT} Ubuntu 24.04.2 LTS${COLOR_INFO}          │
+${pad_str}│  ${COLOR_SUCCESS}[2]${COLOR_RESET}${COLOR_ACCENT} Ubuntu 25.04 LTS${COLOR_INFO}            │
+${pad_str}│  ${COLOR_SUCCESS}[3]${COLOR_RESET}${COLOR_ACCENT} Debian 12.10${COLOR_INFO}                │
+${pad_str}│  ${COLOR_SUCCESS}[4]${COLOR_RESET}${COLOR_ACCENT} Kali Linux${COLOR_INFO}                  │
+${pad_str}│  ${COLOR_SUCCESS}[5]${COLOR_RESET}${COLOR_ACCENT} Fedora 39${COLOR_INFO}                   │
+${pad_str}│  ${COLOR_SUCCESS}[6]${COLOR_RESET}${COLOR_ACCENT} Arch Linux${COLOR_INFO}                  │
+${pad_str}│  ${COLOR_SUCCESS}[7]${COLOR_RESET}${COLOR_ACCENT} Linux Mint${COLOR_INFO}                  │
+${pad_str}│  ${COLOR_SUCCESS}[8]${COLOR_RESET}${COLOR_ACCENT} Windows 11${COLOR_INFO}                  │
+${pad_str}│  ${COLOR_SUCCESS}[9]${COLOR_RESET}${COLOR_ACCENT} CentOS Stream 10${COLOR_INFO}            │
+${pad_str}│                                  │
+${pad_str}│  ${COLOR_WARNING}[10]${COLOR_RESET}${COLOR_ACCENT} Server ISOs${COLOR_INFO}                │
+${pad_str}│                                  │
+${pad_str}│  ${COLOR_ERROR}[0]${COLOR_RESET}${COLOR_ACCENT} Sortir${COLOR_INFO}                      │
+${pad_str}╰──────────────────────────────────╯
+
+${pad_str}${COLOR_PRIMARY}Tria una opció:${COLOR_RESET} ")" option
+
+      case $option in
+      1) iso_name="ubuntu 24.04.2" ;;
+      2) iso_name="ubuntu 25.04" ;;
+      3) iso_name="debian" ;;
+      4) iso_name="kali" ;;
+      5) iso_name="fedora" ;;
+      6) iso_name="arch" ;;
+      7) iso_name="mint" ;;
+      8) iso_name="windows" ;;
+      9) iso_name="centos" ;;
+      10) 
+clear
+read -p "$(echo -e "\n${pad_str}${COLOR_INFO}╭──────────────────────────────────╮
+${pad_str}│        ${COLOR_PRIMARY}ISOs Disponibles${COLOR_INFO}          │
+${pad_str}├──────────────────────────────────┤
+${pad_str}│  ${COLOR_SUCCESS}[1]${COLOR_RESET}${COLOR_ACCENT} Ubuntu Server 24.04.2 LTS${COLOR_INFO}   │
+${pad_str}│  ${COLOR_SUCCESS}[2]${COLOR_RESET}${COLOR_ACCENT} Ubuntu Server 25.04 LTS${COLOR_INFO}     │
+${pad_str}│  ${COLOR_SUCCESS}[3]${COLOR_RESET}${COLOR_ACCENT} Debian 12${COLOR_INFO}                   │
+${pad_str}│                                  │
+${pad_str}│  ${COLOR_ERROR}[0]${COLOR_RESET}${COLOR_ACCENT} Sortir${COLOR_INFO}                      │
+${pad_str}╰──────────────────────────────────╯
+
+         ${pad_str}${COLOR_PRIMARY}Tria una opció:${COLOR_RESET} ")" server_option
+         case $server_option in
+         1) iso_name="ubuntu server 24.04.2" ;;
+         2) iso_name="ubuntu server 25.04" ;;
+         3) iso_name="debian" ;;
+         0)             
+            echo -e "${COLOR_SUCCESS} Sortint... ${COLOR_INFO}"
+            sleep 0.4
+            clear
+            exit 0
+            ;;
+         *) echo "Opció no vàlida"; exit 1 ;;
+         esac
+         ;;
+      0)
+         echo -e "${COLOR_SUCCESS} Sortint... ${COLOR_INFO}"
+         sleep 0.4
+         clear
+         exit 0
+         ;;
+      *)
+         echo "Opció no vàlida"
+         sleep 1
+         clear
+         exit 1
+         ;;
+      esac
+   fi
+   clear
+   # ISO sources definition
+   declare -A iso_sources=(
+      ["ubuntu24"]="https://releases.ubuntu.com/noble/ubuntu-24.04.2-desktop-amd64.iso"
+      ["ubuntu-25"]="https://releases.ubuntu.com/25.04/ubuntu-25.04-desktop-amd64.iso"
+      ["ubuntu server 24.04.2"]="https://releases.ubuntu.com/noble/ubuntu-24.04.2-live-server-amd64.iso"
+      ["ubuntu server 25.04"]="https://releases.ubuntu.com/25.04/ubuntu-25.04-live-server-amd64.iso"
+      ["debian"]="https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.11.0-amd64-netinst.iso"
+      ["kali"]="https://cdimage.kali.org/kali-2025.2/kali-linux-2025.2-installer-amd64.iso"
+      ["fedora"]="https://download.fedoraproject.org/pub/fedora/linux/releases/39/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-39-1.5.iso"
+      ["arch"]="https://geo.mirror.pkgbuild.com/iso/latest/archlinux-x86_64.iso"
+      ["mint"]="https://mirrors.edge.kernel.org/linuxmint/stable/21.2/linuxmint-21.2-cinnamon-64bit.iso"
+      ["windows"]="https://software.download.prss.microsoft.com/dbazure/Win11_24H2_English_x64.iso?t=d269e4ca-19ba-4432-9299-7a7ed9edc350&P1=1745598407&P2=601&P3=2&P4=B2YMdSpVmYB0GiAfhQvMX2Y7IxZKOOkpAx9x87FXXVLpO1icnOnvICOo1gfxnPNOhsh5rnVb0c5HL%2fEmg9ntSHbKvIcSJI5kilteHg9f6%2fF4rBN8BgDA2MTIHz6wgGO3yxoQZGHjsx%2fZ5ASS9z48YYwIUhGliVHbpq8nJlxBX3LG%2fijTHC3BPtbAklNxfU7JpK3hrw9wKCdxpxrX85oRidNn99FcWAOfWsjlffAqTpQWrITUCeufamukXrxhCV%2fUuUgZts84Todo6ntiVixEOWMTNSNL8BzVrcut2qXDMw55Org54BeHa2aOzFmk6DRhWETmqIeddGSG%2fxbSbPTMRQ%3d%3d"
+      ["centos"]="https://mirrors.centos.org/mirrorlist?path=/10-stream/BaseOS/x86_64/iso/CentOS-Stream-10-latest-x86_64-dvd1.iso&redirect=1&protocol=https"
+   )
+
+   if [ -z "$iso_name" ]; then
+      echo "Error: Cal especificar una ISO"
+      echo "ISOs disponibles:"
+      for iso in "${!iso_sources[@]}"; do
+         echo "  - $iso"
+      done
+      exit 1
+   fi
+
+   if [ ${iso_sources[$iso_name]+_} ]; then
+      echo "Descarregant $iso_name ISO..."
+      wget -c "${iso_sources[$iso_name]}" -P "$download_dir"
+      echo "ISO descarregada a: $download_dir"
+   else
+      echo "Error: ISO no trobada"
+      echo "ISOs disponibles:"
+      for iso in "${!iso_sources[@]}"; do
+         echo "  - $iso"
+      done
+      exit 1
+   fi
+}
+
+size() {
+   local file="$1"
+   if [ -z "$file" ]; then
+      echo "Error: Cap fitxer especificat"
+      echo "Ús: gt -s <nom_del_fitxer>"
+      exit 1
+   fi
+
+   if [ -f "$file" ]; then
+      size=$(du -sh "$file" | awk '{print $1}')
+      echo "Mida de $file: $size"
+   elif [ -d "$file" ]; then
+      size=$(du -h --max-depth=1 "$file" | tail -n 1 | awk '{print $1}')
+      echo "Mida de $file: $size"
+   else
+      echo "Error: El fitxer $file no existeix."
+   fi
+}
+
+# -------------------------------------------------------------------------------------------------- #
+# ------------------------------------------ Help -------------------------------------------------- #
+# -------------------------------------------------------------------------------------------------- #
+
+help() {
+   echo "Ús: gt [OPCIÓ] [PAQUET/FITXER]"
+   echo ""
+   echo "Opcions:"
+   echo "  -i, --install <paquet>        Instal·la un paquet (via yay)"
+   echo "  -i iso <nom-iso>              Descarrega una ISO (ubuntu, debian, kali, fedora, arch, mint, windows, centos)"
+   echo "  -i iso list                   Mostra la llista d'ISOs disponibles i permet seleccionar-ne una"
+   echo "  -u, --update                  Actualitza el sistema"
+   echo "  -vm, --virtual-machine        Gestiona KVM (inicia/atura)"
+   echo "  -r, --remove <paquet>         Desinstal·la un paquet"
+   echo "  -tr, --trash <fitxer>         Mou un fitxer a la paperera"
+   echo "  -s, --size <fitxer|directori> Mostra la mida d'un fitxer o directori"
+   echo "  -v, --version                 Mostra la versió del programa"
+   echo "  -h, --help                    Mostra aquesta ajuda"
+   echo ""
+   echo "Exemples:"
+   echo "  gt -i firefox               Instal·la Firefox"
+   echo "  gt -i iso ubuntu            Descarrega la ISO d'Ubuntu"
+   echo "  gt -r vlc                   Desinstal·la VLC"
+   echo "  gt -tr document.txt         Mou document.txt a la paperera"
+   echo "  gt -u                       Actualitza el sistema"
+   echo "  gt -vm                      Gestiona la màquina virtual KVM"
+   echo "  gt -s ~/Documents           Mostra la mida de la carpeta Documents"
+   exit 0
+}
+
+
+# Valors per defecte
+install=false
+update_flag=false
+kvm_manager=false
+
+# -------------------------------------------------------------------------- #
+# ------------------------ Analitzar opcions ------------------------------- #
+# -------------------------------------------------------------------------- #
+
+
+while [[ "$#" -gt 0 ]]; do
+   case $1 in
+   -i | --install)
+      if [ -n "$2" ]; then
+         if [ "$2" = "iso" ]; then
+            if [ -n "$3" ]; then
+               download_iso "$3"
+               exit 0
+            else
+               echo "Error: Cal especificar una ISO"
+               exit 1
+            fi
+         else
+            package_name="$2"
+            install=true
+         fi
+         shift
+      else
+         echo -e "\n Error: -i|--install requereix un nom de paquet"
+         exit 1
+      fi
+      ;;
+   -u | --update) update_flag=true ;;
+   -vm | --virtual-machine) kvm_manager=true ;;
+   -r | --remove)
+      if [ -n "$2" ]; then
+         package_name="$2"
+         uninstall "$package_name"
+         exit 0
+      else
+         echo "Error: rm|--remove requereix un nom de paquet"
+         exit 1
+      fi
+      ;;
+   -tr | --trash)
+      if [ -n "$2" ]; then
+         package_name="$2"
+         trash "$package_name"
+         exit 0
+      else
+         echo "Error: -tr|--trash requereix un nom de paquet"
+         exit 1
+      fi
+      ;;
+   -h | --help)
+      help
+      ;;
+   -v | --version)
+      echo -e "\n${COLOR_PRIMARY}Gurix Tools versió ${version}${COLOR_RESET}\n"
+      echo -e "${COLOR_INFO}Versió per la distribució ${distro}${COLOR_RESET}\n"
+      echo -e "Desenvolupat per ${COLOR_ACCENT}Gurix${COLOR_RESET}\n"
+      exit 0
+      ;;
+   unzip)
+      if [ -n "$2" ]; then
+         package_name="$2"
+         unzip "$package_name"
+         exit 0
+      else
+         echo "Error: unzip requereix un nom de paquet"
+         exit 1
+      fi
+      ;;
+   -s | --size)
+      if [ -n "$2" ]; then
+         file="$2"   
+         size "$file"
+         exit 0
+      else
+         echo "Error: -s|--size requereix un nom d'arxiu o directori"
+         exit 1
+      fi
+      ;;
+   *) echo "Opció desconeguda: $1" ;;
+   esac
+   shift
+done
+
+# Executar funcions segons les opcions
+$install && install "$package_name"
+$update_flag && perform_update
+$kvm_manager && kvm_manager
+
+# Per compilar el script, utilitza:
+# shc -f ~/apps/gt/gt && sudo mv ~/apps/gt/gt.x /usr/local/bin/gt && sudo chmod +x /usr/local/bin/gt && rm ~/apps/gt/gt.x.c
+
+
+#Idees
+
+# guro zip per comprimir fitxers de tota mena
+
+# du -h --max-depth=1
+```
+
+## Version
+- **Version**: 1.6.1b
+- **Target Distribution**: Arch Linux
+- **Last Updated**: 2025-11-12
