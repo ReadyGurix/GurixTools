@@ -2,6 +2,8 @@
 
 # Gurix Tools Entry Point
 
+VERSION="E-2.1.0b"
+
 # Resolve installation directory
 # If running from source (e.g. during dev), use relative paths
 # If installed, use /usr/local/lib/gurixtools
@@ -30,7 +32,6 @@ source "$GT_MOD_DIR/system.sh"
 source "$GT_MOD_DIR/kvm.sh"
 source "$GT_MOD_DIR/files.sh"
 
-VERSION="E-2.1.0a"
 
 show_help() {
     echo -e "${COLOR_PRIMARY}Gurix Tools (gt) v$VERSION${COLOR_RESET}"
@@ -121,9 +122,13 @@ case "$1" in
         fi
         ;;
     version|-v|--version)
-        echo "Gurix Tools v$VERSION"
+        show_banner "Gurix Tools"
+        echo -e "  ${COLOR_PRIMARY}Version:${COLOR_RESET} $VERSION"
         detect_distro
-        echo "$MSG_DETECTED_DISTRO: $DISTRO_NAME ($DISTRO_ID)"
+        echo -e "  ${COLOR_PRIMARY}Distro:${COLOR_RESET}  $DISTRO_NAME ($DISTRO_ID)"
+        echo -e "  ${COLOR_PRIMARY}Author:${COLOR_RESET}  Gurix"
+        echo -e "  ${COLOR_PRIMARY}License:${COLOR_RESET} Apache License Version 2.0"
+        echo
         ;;
     help|-h|--help)
         show_help

@@ -8,16 +8,16 @@ download_iso() {
     mkdir -p "$download_dir"
 
     declare -A iso_sources=(
-        ["ubuntu24"]="https://releases.ubuntu.com/noble/ubuntu-24.04.2-desktop-amd64.iso"
-        ["ubuntu25"]="https://releases.ubuntu.com/25.04/ubuntu-25.04-desktop-amd64.iso"
-        ["ubuntu-server24"]="https://releases.ubuntu.com/noble/ubuntu-24.04.2-live-server-amd64.iso"
-        ["debian"]="https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.11.0-amd64-netinst.iso"
-        ["kali"]="https://cdimage.kali.org/kali-2025.2/kali-linux-2025.2-installer-amd64.iso"
-        ["fedora"]="https://download.fedoraproject.org/pub/fedora/linux/releases/39/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-39-1.5.iso"
+        ["ubuntu24"]="https://releases.ubuntu.com/24.04.1/ubuntu-24.04.1-desktop-amd64.iso"
+        ["ubuntu25"]="https://cdimage.ubuntu.com/daily-live/current/plucky-desktop-amd64.iso"
+        ["ubuntu-server24"]="https://releases.ubuntu.com/24.04.1/ubuntu-24.04.1-live-server-amd64.iso"
+        ["debian"]="https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.9.0-amd64-netinst.iso"
+        ["kali"]="https://cdimage.kali.org/kali-2024.4/kali-linux-2024.4-installer-amd64.iso"
+        ["fedora"]="https://download.fedoraproject.org/pub/fedora/linux/releases/41/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-41-1.4.iso"
         ["arch"]="https://geo.mirror.pkgbuild.com/iso/latest/archlinux-x86_64.iso"
-        ["mint"]="https://mirrors.edge.kernel.org/linuxmint/stable/21.2/linuxmint-21.2-cinnamon-64bit.iso"
-        ["windows"]="https://software.download.prss.microsoft.com/dbazure/Win11_24H2_English_x64.iso"
-        ["centos"]="https://mirrors.centos.org/mirrorlist?path=/10-stream/BaseOS/x86_64/iso/CentOS-Stream-10-latest-x86_64-dvd1.iso&redirect=1&protocol=https"
+        ["mint"]="https://mirrors.edge.kernel.org/linuxmint/stable/22/linuxmint-22-cinnamon-64bit.iso"
+        ["windows"]="https://software-download.microsoft.com/db/Win11_24H2_English_x64.iso?t=98d9753c-1234-4567-8901-abcdef123456&e=1737300000&h=abcdef1234567890abcdef1234567890" # Note: Windows links expire, this is a placeholder or needs dynamic fetching.
+        ["centos"]="https://mirrors.centos.org/mirrorlist?path=/9-stream/BaseOS/x86_64/iso/CentOS-Stream-9-latest-x86_64-dvd1.iso&redirect=1&protocol=https"
     )
 
     if [ "$iso_name" = "list" ] || [ -z "$iso_name" ]; then
