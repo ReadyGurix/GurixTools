@@ -18,6 +18,7 @@ perform_update() {
         rm -f "$tmp_log"
     fi
     
+    clear
     alert_success "$MSG_SYS_UPDATE_COMPLETE"
     pause
 }

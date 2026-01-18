@@ -2,15 +2,29 @@
 
 # Gurix Tools Entry Point
 
-VERSION="E-2.1.0b"
+VERSION="E-2.1.0c"
 
 # Resolve installation directory
-# If running from source (e.g. during dev), use relative paths
-# If installed, use /usr/local/lib/gurixtools
-if [ -d "$(dirname "$0")/../lib" ]; then
-    GT_LIB_DIR="$(dirname "$0")/../lib"
-    GT_MOD_DIR="$(dirname "$0")/../modules"
+# Handle symlinks to find the real location of the script
+SOURCE=${BASH_SOURCE[0]}
+while [ -L "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
+  SOURCE=$(readlink "$SOURCE")
+  [[ $SOURCE != /* ]] && SOURCE=$DIR/$SOURCE # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+SCRIPT_DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
+
+# Check for lib relative to script
+# If running from source, lib is at ../lib
+# If installed, lib is at ./lib (since script is in /usr/local/lib/gurixtools/gt)
+if [ -d "$SCRIPT_DIR/../lib" ]; then
+    GT_LIB_DIR="$SCRIPT_DIR/../lib"
+    GT_MOD_DIR="$SCRIPT_DIR/../modules"
+elif [ -d "$SCRIPT_DIR/lib" ]; then
+    GT_LIB_DIR="$SCRIPT_DIR/lib"
+    GT_MOD_DIR="$SCRIPT_DIR/modules"
 else
+    # Fallback
     GT_LIB_DIR="/usr/local/lib/gurixtools/lib"
     GT_MOD_DIR="/usr/local/lib/gurixtools/modules"
 fi
