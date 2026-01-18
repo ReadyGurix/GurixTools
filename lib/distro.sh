@@ -44,10 +44,10 @@ init_package_manager() {
             SYS_UPDATE="sudo dnf update -y"
             ;;
         *)
-            echo "Warning: Unsupported distribution '$DISTRO_ID'. Package management commands may fail."
-            PKG_INSTALL="echo 'Install not supported on this distro: '"
-            PKG_REMOVE="echo 'Remove not supported on this distro: '"
-            SYS_UPDATE="echo 'Update not supported on this distro'"
+            echo "$MSG_WARN_UNSUPPORTED_DISTRO '$DISTRO_ID'. Package management commands may fail."
+            PKG_INSTALL="echo '$MSG_ERR_INSTALL_NOT_SUPPORTED'"
+            PKG_REMOVE="echo '$MSG_ERR_REMOVE_NOT_SUPPORTED'"
+            SYS_UPDATE="echo '$MSG_ERR_UPDATE_NOT_SUPPORTED'"
             ;;
     esac
 }

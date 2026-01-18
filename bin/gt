@@ -18,6 +18,11 @@ source "$GT_LIB_DIR/utils.sh"
 source "$GT_LIB_DIR/tui.sh"
 source "$GT_LIB_DIR/distro.sh"
 
+# Load Language
+source "$GT_LIB_DIR/lang.sh"
+CURRENT_LANG=$(get_configured_language)
+load_language "$CURRENT_LANG"
+
 # Load Modules
 source "$GT_MOD_DIR/install.sh"
 source "$GT_MOD_DIR/iso.sh"
@@ -25,30 +30,30 @@ source "$GT_MOD_DIR/system.sh"
 source "$GT_MOD_DIR/kvm.sh"
 source "$GT_MOD_DIR/files.sh"
 
-VERSION="2.0.0-modular"
+VERSION="E-2.1.0a"
 
 show_help() {
     echo -e "${COLOR_PRIMARY}Gurix Tools (gt) v$VERSION${COLOR_RESET}"
-    echo "Usage: gt [COMMAND] [OPTIONS]"
+    echo "$MSG_USAGE: gt [COMMAND] [OPTIONS]"
     echo
-    echo "Commands:"
-    echo "  install <pkg>   Install a package"
-    echo "  remove <pkg>    Remove a package"
-    echo "  update          Update system"
-    echo "  iso [list|name] Download ISOs"
-    echo "  kvm             Manage KVM"
-    echo "  trash <file>    Move file to trash"
-    echo "  unzip <file>    Extract archive"
-    echo "  size <file>     Show size"
-    echo "  self-uninstall  Uninstall Gurix Tools"
-    echo "  version         Show version"
-    echo "  help            Show this help"
+    echo "$MSG_COMMANDS:"
+    echo "  install <pkg>   $DESC_INSTALL"
+    echo "  remove <pkg>    $DESC_REMOVE"
+    echo "  update          $DESC_UPDATE"
+    echo "  iso [list|name] $DESC_ISO"
+    echo "  kvm             $DESC_KVM"
+    echo "  trash <file>    $DESC_TRASH"
+    echo "  unzip <file>    $DESC_UNZIP"
+    echo "  size <file>     $DESC_SIZE"
+    echo "  self-uninstall  $DESC_SELF_UNINSTALL"
+    echo "  version         $DESC_VERSION"
+    echo "  help            $DESC_HELP"
     echo
-    echo "Flags:"
-    echo "  -i, --install   Alias for install command"
-    echo "  -u, --update    Alias for update command"
-    echo "  -r, --remove    Alias for remove command"
-    echo "  -vm             Alias for kvm command"
+    echo "$MSG_FLAGS:"
+    echo "  -i, --install   $DESC_FLAG_INSTALL"
+    echo "  -u, --update    $DESC_FLAG_UPDATE"
+    echo "  -r, --remove    $DESC_FLAG_REMOVE"
+    echo "  -vm             $DESC_FLAG_VM"
 }
 
 # Main Logic
@@ -95,12 +100,12 @@ case "$1" in
         ;;
     self-uninstall)
         echo
-        read -p "Are you sure you want to uninstall Gurix Tools? [y/N] " resp
+        read -p "$MSG_CONFIRM_UNINSTALL" resp
         if [[ "$resp" =~ ^[Yy]$ ]]; then
             # We can't easily call the uninstall script if it's inside the dir we are deleting
             # So we replicate the logic or call it and hope for the best (it works because script is loaded into memory usually, but safer to just run commands)
             
-            echo "Uninstalling..."
+            echo "$MSG_UNINSTALLING"
             if [ -f "$GT_LIB_DIR/../uninstall.sh" ]; then
                  # If we are running from source/dev
                  "$GT_LIB_DIR/../uninstall.sh"
@@ -108,23 +113,23 @@ case "$1" in
                  # Installed version
                  sudo rm -f /usr/local/bin/gt
                  sudo rm -rf /usr/local/lib/gurixtools
-                 echo "Uninstallation complete."
+                 echo "$MSG_UNINSTALL_COMPLETE"
             fi
             exit 0
         else
-            echo "Cancelled."
+            echo "$MSG_CANCELLED"
         fi
         ;;
     version|-v|--version)
         echo "Gurix Tools v$VERSION"
         detect_distro
-        echo "Distro: $DISTRO_NAME ($DISTRO_ID)"
+        echo "$MSG_DETECTED_DISTRO: $DISTRO_NAME ($DISTRO_ID)"
         ;;
     help|-h|--help)
         show_help
         ;;
     *)
-        echo "Unknown command: $1"
+        echo "$MSG_UNKNOWN_CMD: $1"
         show_help
         exit 1
         ;;

@@ -22,8 +22,8 @@ download_iso() {
 
     if [ "$iso_name" = "list" ] || [ -z "$iso_name" ]; then
         clear
-        show_banner "ISO Downloader"
-        echo -e "${COLOR_INFO}Available ISOs:${COLOR_RESET}"
+        show_banner "$MSG_ISO_BANNER"
+        echo -e "${COLOR_INFO}$MSG_ISO_AVAILABLE${COLOR_RESET}"
         echo -e "  ${COLOR_SUCCESS}[1]${COLOR_RESET} Ubuntu 24.04 LTS"
         echo -e "  ${COLOR_SUCCESS}[2]${COLOR_RESET} Ubuntu 25.04"
         echo -e "  ${COLOR_SUCCESS}[3]${COLOR_RESET} Debian 12"
@@ -33,10 +33,10 @@ download_iso() {
         echo -e "  ${COLOR_SUCCESS}[7]${COLOR_RESET} Linux Mint"
         echo -e "  ${COLOR_SUCCESS}[8]${COLOR_RESET} Windows 11"
         echo -e "  ${COLOR_SUCCESS}[9]${COLOR_RESET} CentOS Stream 10"
-        echo -e "  ${COLOR_WARNING}[10]${COLOR_RESET} Server ISOs"
-        echo -e "  ${COLOR_ERROR}[0]${COLOR_RESET} Exit"
+        echo -e "  ${COLOR_WARNING}[10]${COLOR_RESET} $MSG_ISO_SERVER_ISOS"
+        echo -e "  ${COLOR_ERROR}[0]${COLOR_RESET} $MSG_ISO_EXIT"
         echo
-        read -p "Select an option: " option
+        read -p "$MSG_ISO_SELECT" option
 
         case $option in
             1) iso_name="ubuntu24" ;;
@@ -49,9 +49,9 @@ download_iso() {
             8) iso_name="windows" ;;
             9) iso_name="centos" ;;
             10)
-                echo -e "\n${COLOR_WARNING}Server ISOs:${COLOR_RESET}"
+                echo -e "\n${COLOR_WARNING}$MSG_ISO_SERVER_ISOS:${COLOR_RESET}"
                 echo -e "  ${COLOR_SUCCESS}[1]${COLOR_RESET} Ubuntu Server 24.04"
-                echo -e "  ${COLOR_ERROR}[0]${COLOR_RESET} Back"
+                echo -e "  ${COLOR_ERROR}[0]${COLOR_RESET} $MSG_ISO_BACK"
                 read -p "Select: " s_opt
                 case $s_opt in
                     1) iso_name="ubuntu-server24" ;;
@@ -59,16 +59,16 @@ download_iso() {
                 esac
                 ;;
             0) return ;;
-            *) alert_error "Invalid option"; return ;;
+            *) alert_error "$MSG_ISO_INVALID"; return ;;
         esac
     fi
 
     if [ -n "${iso_sources[$iso_name]}" ]; then
         local url="${iso_sources[$iso_name]}"
-        echo -e "Downloading ${COLOR_PRIMARY}$iso_name${COLOR_RESET}..."
+        echo -e "$MSG_ISO_DOWNLOADING ${COLOR_PRIMARY}$iso_name${COLOR_RESET}..."
         wget -c "$url" -P "$download_dir"
-        alert_success "Download complete: $download_dir"
+        alert_success "$MSG_ISO_COMPLETE $download_dir"
     else
-        alert_error "ISO '$iso_name' not found."
+        alert_error "$MSG_ISO_NOT_FOUND '$iso_name'"
     fi
 }

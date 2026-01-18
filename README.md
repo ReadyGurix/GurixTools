@@ -2,7 +2,7 @@
 
 A modular, multi-distro CLI toolkit for Linux power-users. Simplifies package management, system updates, ISO downloads, and more with a modern TUI.
 
-![gt version](https://img.shields.io/badge/version-2.0.0b-blue.svg)
+![gt version](https://img.shields.io/badge/version-2.1.0a-blue.svg)
 
 ## Index
 
