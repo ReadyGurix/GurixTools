@@ -1,192 +1,69 @@
-# Gurix Tools (Experimental)
+# Gurix Tools
 
-> A small, practical and opinionated toolkit of handy commands and helpers for Linux power-users.
-
-![gt version](https://img.shields.io/badge/version-1.7.0c-orange.svg)
-
----
-
-Note: The bundled `gt` script was recently updated (version E-1.7.0c). Key fixes include correct ANSI color rendering and improved spinner behavior that avoids overlapping sudo password prompts — see `Arch Based/gt` for the full, current script.
-
+A modular, multi-distro CLI toolkit for Linux power-users. Simplifies package management, system updates, ISO downloads, and more with a modern TUI.
 
 ## Index
-<details>
-<summary><strong>Interactive Index — click to expand</strong></summary>
 
-- [Roadmap](#roadmap)
-- [How to install](#how-to-install)
-  - [Arch-based systems (recommended)](#arch-based-systems-recommended)
-  - [Debian / Ubuntu based systems](#debian--ubuntu-based-systems)
-- [Quick usage & examples](#quick-usage--examples)
-- [Contributing](#contributing)
-- [Credits](#credits)
+- [Dependencies](#dependencies)
+- [How to Install](#how-to-install)
+- [Features](#features)
 - [License](#license)
 
-</details>
----
+## Dependencies
 
-## Roadmap
+Gurix Tools requires the following packages to function correctly:
 
-These are suggested improvements and features to make `gt` more useful, robust and maintainable.
+- `bash` (4.0+)
+- `wget` (for downloading ISOs)
+- `bc` (for calculations)
+- `toilet` (for banners)
+- `p7zip` / `unrar` (for archive extraction)
 
-Short term (easy wins)
-- Add automatic package-manager detection (detect pacman/apt/dnf) and run the correct commands instead of hard-coding `yay`/`pacman`.
-- Add a configuration file (`~/.config/gt/config`) to store user preferences (default download dir, mirror choices, language).
-- Add command-line completion (bash/zsh) to speed up usage.
-- Replace plaintext password file usage with an encrypted store option (gpg or pass) and fall back to secure clipboard copy.
+The installation script will attempt to install these automatically.
 
-Medium term
-- Package `gt` as a proper distribution package (AUR PKGBUILD and Debian `.deb`) for easy installation.
-- Split ISO lists into a small JSON file or remote source so ISO sources can be updated without editing the script.
-- Add unit and integration tests for the script (shellspec or bats).
-- Add a logging mechanism (rotating logs under `~/.local/share/gt/logs`) for debug and audit.
+## How to Install
 
-Long term (bigger features)
-- Build a small TUI with `dialog` or `fzf` for interactive operations (selecting ISOs, package management, KVM control).
-- Add plugin architecture so third-party extensions (e.g., cloud, docker helpers) can be added.
+### Automatic Installation (Recommended)
 
-Priority suggestions
-- 1) Package-manager detection and safe fallbacks
-- 2) Config file and secure password handling
-- 3) Packaging (AUR/DEB)
+Clone the repository and run the install script:
 
----
-
-## How to install
-
-Below are simple, safe instructions for installing `gt` on both Arch-based and Debian-based systems.
-
-Notes
-- The shipped script uses `yay`, `pacman` and other Arch tooling. On Debian/Ubuntu you can still use the script but some package-management commands will need to be adapted or replaced.
-- You can always install the script and edit the package-manager lines to your preference.
-
-### Arch-based systems (recommended)
-
-1. Make the script executable and install it to `/usr/local/bin`:
-
-```sh
-# from the repository root
-sudo cp "Arch Based/gt" /usr/local/bin/gt
-sudo chmod +x /usr/local/bin/gt
+```bash
+git clone https://github.com/ReadyGurix/GurixTools.git
+cd GurixTools
+./install.sh
 ```
 
-2. (Optional) Install recommended dependencies used by the script:
+This script detects your distribution (Arch, Debian/Ubuntu, Fedora) and installs the necessary dependencies and files.
 
-```sh
-sudo pacman -S --needed wget bc toilet p7zip unrar wl-clipboard
-# If you rely on AUR helper usage inside the script, ensure you have one installed (e.g. yay/paru)
-```
+### Manual Installation
 
-3. Run `gt` from the shell:
+1. Copy the library and module files to `/usr/local/lib/gurixtools`:
+   ```bash
+   sudo mkdir -p /usr/local/lib/gurixtools/{lib,modules}
+   sudo cp lib/*.sh /usr/local/lib/gurixtools/lib/
+   sudo cp modules/*.sh /usr/local/lib/gurixtools/modules/
+   ```
 
-```sh
-gt -h
-```
+2. Copy the executable and link it:
+   ```bash
+   sudo cp bin/gt /usr/local/lib/gurixtools/gt
+   sudo chmod +x /usr/local/lib/gurixtools/gt
+   sudo ln -sf /usr/local/lib/gurixtools/gt /usr/local/bin/gt
+   ```
 
-Tip: If you want a single-file binary, you can compile the script with `shc` (not required):
+## Features
 
-```sh
-# install shc, then:
-shc -f /usr/local/bin/gt
-# move and set permissions as needed
-```
+Gurix Tools provides a unified interface for common tasks across different distributions:
 
-### Debian / Ubuntu based systems
-
-Because the script uses `yay`/`pacman` operations, you have two main options on Debian/Ubuntu:
-
-Option A — Install the script and edit package-manager lines
-
-1. Copy and make executable:
-
-```sh
-sudo cp "Arch Based/gt" /usr/local/bin/gt
-sudo chmod +x /usr/local/bin/gt
-```
-
-2. Edit `/usr/local/bin/gt` and replace `yay -S` / `pacman -R` / `yay -Syu` with `apt install -y` / `apt remove -y` / `apt update && apt upgrade -y` or adapt to your package manager.
-
-Option B — Use a compatibility wrapper (quick)
-
-Create small wrapper functions or aliases at the top of the script that map `install_pkg`, `remove_pkg`, `update_system` to appropriate commands depending on detected distro. Example snippet to add near the top of the script:
-
-```sh
-# simple detection
-if command -v apt >/dev/null 2>&1; then
-	install_cmd="sudo apt install -y"
-	remove_cmd="sudo apt remove -y"
-	update_cmd="sudo apt update && sudo apt upgrade -y"
-else
-	install_cmd="yay -S"
-	remove_cmd="sudo pacman -R"
-	update_cmd="yay -Syu"
-fi
-
-# then use "$install_cmd <package>" in the script
-```
-
-3. Install runtime dependencies used by the script:
-
-```sh
-sudo apt update
-sudo apt install -y wget bc toilet p7zip unrar
-```
-
-4. Use `gt -h` to see help and available options.
-
----
-
-## Quick usage & examples
-
-After installation, the script exposes a few handy flags. Example uses:
-
-- Install a package (Arch by default in the script):
-	- `gt -i firefox`
-- Download an ISO (interactive list):
-	- `gt -i iso list` or `gt -i iso ubuntu`
-- Update the system:
-	- `gt -u`
-- KVM manager (start/stop):
-	- `gt -vm`
-- Move a file to trash:
-	- `gt -tr myfile.txt`
-- Unzip various archive formats:
-	- `gt unzip archive.zip`
-
-Run `gt -h` to see the full list of options and examples.
-
----
-
-## Contributing
-
-Contributions, ideas, bug reports and PRs are welcome.
-
-Suggested workflow:
-
-1. Fork the repo and create a feature branch.
-2. Run shellcheck/linting and add tests for new behavior where possible.
-3. Create a PR with a clear description and a short demo of the change.
-
-Small ways to help right now:
-- Add automated tests with `bats` or `shellspec`.
-- Implement package-manager detection.
-- Move ISO list to a JSON file and add a refresh mechanism.
-
----
-
-## Credits
-
-- Developer: @ReadyGurix
-
-Special thanks to everyone who tests, files issues, or contributes improvements.
-
----
+- **Package Management**: Install/Remove packages using `gt install` / `gt remove` (Supports `apt`, `pacman`/`yay`, `dnf`).
+- **System Updates**: Update your system with `gt update`.
+- **ISO Downloader**: Interactive menu to download popular Linux ISOs (`gt iso list`).
+- **KVM Manager**: Easily start/stop KVM kernel modules (`gt kvm`).
+- **File Utilities**:
+  - `gt trash <file>`: Safely move files to trash.
+  - `gt unzip <file>`: Extract various archive formats (zip, tar, rar, 7z).
+  - `gt size <file>`: Check file/directory size.
 
 ## License
 
-This project includes a `LICENSE` file in the repository root. Review it for the exact terms. If you intend to reuse code from `gt`, keep the original license and credits.
-
----
-
-Enjoy using `gt` - small tools, big productivity.
-
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
