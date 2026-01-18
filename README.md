@@ -2,14 +2,20 @@
 
 A modular, multi-distro CLI toolkit for Linux power-users. Simplifies package management, system updates, ISO downloads, and more with a modern TUI.
 
-![gt version](https://img.shields.io/badge/version-2.1.0a-blue.svg)
+![gt version](https://img.shields.io/badge/version-2.1.0b-blue.svg)
 
 ## Index
 
-- [Dependencies](#dependencies)
-- [How to Install](#how-to-install)
-- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Modules](#modules)
+- [Configuration](#configuration)
+- [Contributing](#contributing)
 - [License](#license)
+
+## Configuration
+
+For details on how to configure language settings and manage the tool, please refer to [CONFIGURATION.md](CONFIGURATION.md).
 
 ## Dependencies
 
